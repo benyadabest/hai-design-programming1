@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "node -e \"require('fs').mkdirSync('public',{recursive:true});require('fs').copyFileSync('node_modules/p5/lib/p5.min.js','public/p5.min.js')\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -14,6 +15,7 @@
     "ajv": "^8.18.0",
     "next": "14.2.35",
     "openai": "^6.25.0",
+    "p5": "1.9.4",
     "react": "^18",
     "react-dom": "^18"
   },

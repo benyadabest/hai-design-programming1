@@ -130,7 +130,7 @@ export default function CanvasPanel({ code, onError, onMetadata }: CanvasPanelPr
   useEffect(() => {
     if (p5SourceRef.current || loadingRef.current) return
     loadingRef.current = true
-    fetch('https://cdn.jsdelivr.net/npm/[email protected]/lib/p5.min.js')
+    fetch('/p5.min.js')
       .then((r) => r.text())
       .then((src) => {
         p5SourceRef.current = src

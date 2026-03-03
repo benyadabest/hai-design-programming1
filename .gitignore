@@ -34,3 +34,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated — rebuilt by postinstall from node_modules/p5
+/public/p5.min.js
