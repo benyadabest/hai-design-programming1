@@ -244,6 +244,8 @@ export default function Home() {
   }, [])
 
   // ── Elicitation: send user message ──────────────────────────────────────
+  const GENERATE_KEYWORDS = ['generate', 'go ahead', "let's go", 'make it', 'create it', 'skip', 'ready']
+
   const handleSend = useCallback(
     async (userInput: string) => {
       if (state.isLoading) return
@@ -255,6 +257,39 @@ export default function Home() {
       dispatch({ type: 'ADD_MESSAGE', message: { role: 'user', content: userInput } })
       dispatch({ type: 'SET_LOADING', value: true })
       const signal = startRequest()
+
+      // ── Keyword shortcut: jump straight to concept extraction ─────────────
+      const wantsToGenerate =
+        state.history.length >= 1 &&
+        GENERATE_KEYWORDS.some((kw) => userInput.toLowerCase().includes(kw))
+
+      if (wantsToGenerate) {
+        dispatch({ type: 'SET_MODE', mode: 'concept_extraction' })
+        dispatch({
+          type: 'ADD_MESSAGE',
+          message: { role: 'assistant', content: 'Got it — generating concepts from your story now…' },
+        })
+        try {
+          const extractData = await callApiOrMock(
+            { mode: 'concept_extraction', history: updatedHistory },
+            signal,
+          )
+          const extractPayload = extractData.payload as ConceptExtractionPayload
+          dispatch({ type: 'SET_PACKAGES', packages: extractPayload.packages })
+          dispatch({
+            type: 'ADD_MESSAGE',
+            message: { role: 'assistant', content: `Here are 3 concept packages. Pick the one that resonates!` },
+          })
+        } catch (err) {
+          if (err instanceof Error && err.name === 'AbortError') return
+          const msg = err instanceof Error ? err.message : 'Unknown error'
+          dispatch({ type: 'ADD_MESSAGE', message: { role: 'assistant', content: `Concept extraction failed: ${msg}` } })
+        } finally {
+          dispatch({ type: 'SET_LOADING', value: false })
+        }
+        return
+      }
+      // ─────────────────────────────────────────────────────────────────────
 
       try {
         const data = await callApiOrMock({ mode: 'elicitation', history: state.history, userInput }, signal)
@@ -636,12 +671,15 @@ export default function Home() {
 
           {/* Canvas (remaining) */}
           <div className="flex-1 flex flex-col min-h-0">
-            <div className="flex-1 p-2 min-h-0 flex flex-col">
-              <CanvasPanel
-                code={state.currentCode}
-                onError={handleCanvasError}
-                onMetadata={handleMetadata}
-              />
+            {/* relative+absolute-fill gives CanvasPanel a definite pixel height */}
+            <div className="flex-1 min-h-0 relative">
+              <div className="absolute inset-0 p-2 flex flex-col">
+                <CanvasPanel
+                  code={state.currentCode}
+                  onError={handleCanvasError}
+                  onMetadata={handleMetadata}
+                />
+              </div>
             </div>
 
             {/* Sliders */}
