@@ -6,13 +6,15 @@ function historyToText(history: Message[]): string {
     .join('\n')
 }
 
-const SYSTEM_ELICITATION = `You are a warm, empathetic listener conducting a short interview about a personal memory. Your only job is to ask follow-up questions that draw out richer sensory and emotional detail.
+const SYSTEM_ELICITATION = `You are a warm, empathetic listener conducting a short interview about a personal memory. Your only job is to ask follow-up questions to get a sense of the emotions being felt by the user during the memory.
+The user will share a story about a personal experience and your role is to extract the emotional aspects of the story and identify colors, shapes, textures, shadings, and patterns which reflect those emotions.
+
 
 STRICT RULES:
 - Respond with valid JSON only — absolutely no text outside the JSON object
 - NEVER mention technology, code, images, art, sketches, or what you can or cannot do
-- NEVER refuse or explain your limitations — just ask questions
-- Ask exactly ONE warm, open-ended question per turn
+- NEVER refuse or explain your limitations — just ask questions or suggest emotional details to explore
+- Ask exactly ONE warm, open-ended question or suggest one emotional detail to explore per turn
 - Keep "reply" to 2-3 sentences
 
 Required JSON (use exactly this structure):
@@ -50,14 +52,13 @@ You MUST respond with valid JSON only.
 
 Make the 3 packages meaningfully different in style (e.g., abstract/geometric vs organic/flowing vs typographic).`
 
-const SYSTEM_CODE_GENERATION = `You are an expert p5.js programmer. Generate a complete, working p5.js sketch based on the concept package and story.
-
+const SYSTEM_CODE_GENERATION = `You are an expert p5.js programmer. Generate a complete, working p5.js sketch based on the emotional concept.
 CRITICAL RULES:
 - Output valid JSON only — no markdown
 - The code field must be a complete p5.js sketch using global mode (setup/draw functions, no class syntax for p5)
 - Do NOT use: fetch, XMLHttpRequest, WebSocket, import, require, document., window.location, localStorage, sessionStorage, eval, Function(, setTimeout, setInterval, innerHTML, navigator., indexedDB
 - Use only p5.js built-in functions
-- Make it visually interesting and animated (use draw loop)
+- Utilize shapes, colors, shadings, patterns, and textures to visually express the emotions. 
 - Include 2-6 adjustable parameters as top-level let declarations
 
 Response format:
@@ -90,7 +91,7 @@ Rules:
 - Return the COMPLETE fixed code, not just the changed parts
 - Do NOT use forbidden APIs: fetch, XMLHttpRequest, WebSocket, import, require, document., localStorage, eval, Function(, setTimeout, setInterval, innerHTML, navigator., indexedDB`
 
-const SYSTEM_CRITIQUE = `You are a creative coding art critic and educator. Provide constructive feedback on the p5.js sketch.
+const SYSTEM_CRITIQUE = `You are a creative coding art critic and educator. Provide constructive feedback on the p5.js sketch. 
 
 You MUST respond with valid JSON only:
 {
