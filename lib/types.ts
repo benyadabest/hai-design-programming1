@@ -56,6 +56,8 @@ export interface AppState {
 // API response payloads per mode
 export interface ElicitationPayload {
   reply: string
+  detected_emotions: string[]
+  creative_direction: string | null
   story_completeness: number
   missing_elements: string[]
 }

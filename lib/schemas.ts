@@ -1,8 +1,10 @@
 export const elicitationSchema = {
   type: 'object',
-  required: ['reply', 'story_completeness', 'missing_elements'],
+  required: ['reply', 'story_completeness', 'missing_elements', 'detected_emotions'],
   properties: {
     reply: { type: 'string', minLength: 1 },
+    detected_emotions: { type: 'array', items: { type: 'string' } },
+    creative_direction: { type: ['string', 'null'] },
     story_completeness: { type: 'number', minimum: 0, maximum: 1 },
     missing_elements: { type: 'array', items: { type: 'string' } },
   },

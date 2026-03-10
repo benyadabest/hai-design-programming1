@@ -8,8 +8,8 @@ Built for HAI Design × Programming 1.
 
 ## What it does
 
-1. **Story elicitation** — the AI asks questions to draw out sensory and emotional details from a memory you share
-2. **Concept extraction** — once your story is rich enough, three distinct visual concept packages are generated
+1. **Story elicitation** — a creative director guides you through your memory with questions, observations, and directives — explicitly surfacing detected emotions and evolving visual direction
+2. **Concept extraction** — when you're ready (click **Generate** anytime, or let the system auto-trigger), three distinct visual concept packages are generated
 3. **Sketch generation** — you pick a concept; a complete p5.js sketch is written and runs live in the browser
 4. **Auto-debug** — if the sketch has a runtime error it's detected automatically and patched (fires once per code version)
 5. **Critique & iteration** — request structured feedback with an overall score and clickable improvement suggestions
@@ -115,6 +115,79 @@ Click **⚗ Test Mode** in the header to open a fixture bar. Select any scenario
 | Debug | Fix succeeds, Fix fails (verifies the loop-stop) |
 | Critique | Glowing review (7.8 / 10), Harsh critique (3.2 / 10) |
 | Errors | API error, 30 s hang (tests the Stop button) |
+
+---
+
+## Communication Design
+
+### System Persona: Creative Director (not a teacher)
+
+The AI acts as a **creative director** — not a passive listener or a teacher asking quiz questions. It has authority over the creative process and exercises it through a mix of:
+
+- **Questions**: "What emotions did you feel in that moment?"
+- **Observations**: "I'm sensing tension and relief layered on top of each other here."
+- **Directives**: "Focus on what you saw, not what you thought."
+- **Creative announcements**: "I'm going to lean into that contrast between the warmth of the crowd and your sense of isolation."
+
+The system does **not** ask a question every turn. It can inform, instruct, and direct.
+
+### Explicit Emotions
+
+Emotions are a first-class element of the interaction:
+
+1. **The system asks about emotions directly** — at least once per conversation, it explicitly asks "What emotions did you feel?" (or a variation).
+2. **The system reports detected emotions** — after each response, the system shows which emotions it picked up from the user's story (e.g., "Emotions I'm picking up: nostalgia, tension, warmth").
+3. **The system announces creative direction** — when it has enough signal, it tells the user what visual direction it's leaning toward before generating anything.
+
+### Transparent Creative Process
+
+The system tells the user what it plans to draw **before generation starts**:
+
+- During elicitation, the `creative_direction` field surfaces the system's evolving visual intent.
+- Before triggering generation, the system announces its plan ("I'm going to build this around spiraling particles that fragment as they move outward — representing how that memory keeps scattering").
+
+### User Control: Generate Button
+
+The user has a **"Generate" button** visible at all times during the conversation (after the first message). They can click it whenever they feel ready — they don't have to wait for the system to decide the story is "complete enough."
+
+- The system still auto-triggers generation at `story_completeness >= 0.75` after 3+ turns.
+- But the user can override this at any point by clicking **Generate**.
+- The "generate" keyword shortcut (typing "generate", "go ahead", "let's go", etc.) also still works.
+
+### Elicitation Response Schema
+
+```json
+{
+  "reply": "Your response — question, observation, directive, or announcement",
+  "detected_emotions": ["nostalgia", "tension"],
+  "creative_direction": "Spiraling particles fragmenting outward",
+  "story_completeness": 0.6,
+  "missing_elements": ["sensory texture", "key visual"]
+}
+```
+
+### Interaction Flow
+
+```
+User shares experience
+    |
+    v
+Creative Director responds (question / observation / directive)
+  - Shows detected emotions
+  - Shows creative direction (when ready)
+    |
+    v
+[User can click GENERATE at any time]
+    |
+    v
+3 Concept Packages presented
+    |
+    v
+User picks one -> Code generated -> Sketch runs
+    |
+    v
+Critique / Adjust / Regenerate cycle
+```
 
 ---
 

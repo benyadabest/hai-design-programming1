@@ -117,7 +117,9 @@ export const FIXTURE_GROUPS: FixtureGroup[] = [
         targetMode: 'elicitation',
         response: {
           reply:
-            "What a vivid memory. The soft golden light, the quiet rustling of leaves, that feeling of complete stillness — I think I have everything I need to start building something.",
+            "What a vivid memory. The soft golden light, the quiet rustling of leaves, that feeling of complete stillness — I'm going to build this around that tension between warmth and silence.",
+          detected_emotions: ['nostalgia', 'peace', 'stillness'],
+          creative_direction: 'Warm golden particles drifting in silence — the stillness before everything changes',
           story_completeness: 0.92,
           missing_elements: [],
         } satisfies ElicitationPayload,
@@ -128,7 +130,9 @@ export const FIXTURE_GROUPS: FixtureGroup[] = [
         description: 'Returns 0.3 completeness — stays in elicitation, asks follow-up.',
         targetMode: 'elicitation',
         response: {
-          reply: "Interesting start! Can you tell me more about the colors or textures you remember most vividly?",
+          reply: "I'm picking up something here, but I need more. Tell me — what emotions did you feel in that moment? Don't think about it too hard, just the first thing that comes.",
+          detected_emotions: ['uncertainty'],
+          creative_direction: null,
           story_completeness: 0.3,
           missing_elements: ['colors', 'textures', 'emotional tone', 'time of day'],
         } satisfies ElicitationPayload,

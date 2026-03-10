@@ -8,6 +8,7 @@ interface ChatPanelProps {
   mode: AppMode
   isLoading: boolean
   onSend: (text: string) => void
+  onGenerate?: () => void
   children?: React.ReactNode
 }
 
@@ -19,7 +20,7 @@ const modePlaceholders: Partial<Record<AppMode, string>> = {
   critique: 'Type to continue the conversation…',
 }
 
-export default function ChatPanel({ messages, mode, isLoading, onSend, children }: ChatPanelProps) {
+export default function ChatPanel({ messages, mode, isLoading, onSend, onGenerate, children }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -45,7 +46,7 @@ export default function ChatPanel({ messages, mode, isLoading, onSend, children 
         {messages.length === 0 && (
           <div className="text-center text-gray-500 text-sm mt-8">
             <p className="text-2xl mb-2">🎨</p>
-            <p>Share a personal experience and I&apos;ll help turn it into a generative art sketch.</p>
+            <p>Share an experience. I&apos;ll shape it into generative art.</p>
           </div>
         )}
         {messages.map((msg, i) => (
@@ -60,7 +61,15 @@ export default function ChatPanel({ messages, mode, isLoading, onSend, children 
                   : 'bg-gray-800 text-gray-100 rounded-bl-sm'
               }`}
             >
-              <p className="whitespace-pre-wrap">{msg.content}</p>
+              <p className="whitespace-pre-wrap">
+                {msg.content.split(/(_[^_]+_)/).map((part, j) =>
+                  part.startsWith('_') && part.endsWith('_') && part.length > 2 ? (
+                    <em key={j} className="text-gray-400 not-italic text-xs block mt-1">{part.slice(1, -1)}</em>
+                  ) : (
+                    <span key={j}>{part}</span>
+                  )
+                )}
+              </p>
             </div>
           </div>
         ))}
@@ -99,6 +108,16 @@ export default function ChatPanel({ messages, mode, isLoading, onSend, children 
           >
             Send
           </button>
+          {onGenerate && mode === 'elicitation' && messages.length >= 1 && (
+            <button
+              type="button"
+              onClick={onGenerate}
+              disabled={isLoading}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-700 text-white text-sm rounded-xl transition-colors font-medium"
+            >
+              Generate
+            </button>
+          )}
         </div>
       </form>
     </div>

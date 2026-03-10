@@ -294,7 +294,14 @@ export default function Home() {
       try {
         const data = await callApiOrMock({ mode: 'elicitation', history: state.history, userInput }, signal)
         const payload = data.payload as ElicitationPayload
-        dispatch({ type: 'ADD_MESSAGE', message: { role: 'assistant', content: payload.reply } })
+        let replyContent = payload.reply
+        if (payload.detected_emotions && payload.detected_emotions.length > 0) {
+          replyContent += `\n\n_Emotions I'm picking up: ${payload.detected_emotions.join(', ')}_`
+        }
+        if (payload.creative_direction) {
+          replyContent += `\n\n_Visual direction: ${payload.creative_direction}_`
+        }
+        dispatch({ type: 'ADD_MESSAGE', message: { role: 'assistant', content: replyContent } })
         dispatch({ type: 'INCREMENT_TURN' })
 
         const newTurnCount = state.turnCount + 1
@@ -331,6 +338,38 @@ export default function Home() {
     },
     [callApiOrMock, startRequest, state.history, state.isLoading, state.turnCount],
   )
+
+  // ── Generate button: jump to concept extraction immediately ─────────────
+  const handleGenerate = useCallback(async () => {
+    if (state.isLoading || state.history.length < 1) return
+    dispatch({ type: 'SET_LOADING', value: true })
+    dispatch({ type: 'SET_MODE', mode: 'concept_extraction' })
+    dispatch({
+      type: 'ADD_MESSAGE',
+      message: { role: 'assistant', content: 'Got it — generating concepts from your story now…' },
+    })
+    const signal = startRequest()
+
+    try {
+      const extractData = await callApiOrMock(
+        { mode: 'concept_extraction', history: state.history },
+        signal,
+      )
+      const extractPayload = extractData.payload as ConceptExtractionPayload
+      dispatch({ type: 'SET_PACKAGES', packages: extractPayload.packages })
+      dispatch({
+        type: 'ADD_MESSAGE',
+        message: { role: 'assistant', content: 'Here are 3 concept packages. Pick the one that resonates!' },
+      })
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      dispatch({ type: 'ADD_MESSAGE', message: { role: 'assistant', content: `Concept extraction failed: ${msg}` } })
+      dispatch({ type: 'SET_MODE', mode: 'elicitation' })
+    } finally {
+      dispatch({ type: 'SET_LOADING', value: false })
+    }
+  }, [callApiOrMock, startRequest, state.history, state.isLoading])
 
   // ── Concept selection → code generation ─────────────────────────────────
   const handleSelectPackage = useCallback(
@@ -625,6 +664,7 @@ export default function Home() {
             mode={state.mode}
             isLoading={state.isLoading}
             onSend={handleSend}
+            onGenerate={handleGenerate}
           >
             {/* Concept cards above input */}
             {state.conceptPackages && (
