@@ -193,9 +193,9 @@ export default function CanvasPanel({ code, onError, onMetadata }: CanvasPanelPr
   }, [code, onError])
 
   return (
-    <div className="w-full flex-1 flex flex-col bg-gray-950 rounded-lg overflow-hidden relative">
+    <div className="w-full flex-1 flex flex-col bg-gray-900 rounded-xl overflow-hidden relative shadow-inner">
       {!code && (
-        <div className="absolute inset-0 flex items-center justify-center text-gray-600 text-sm">
+        <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm">
           Your sketch will appear here
         </div>
       )}

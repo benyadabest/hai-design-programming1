@@ -88,7 +88,8 @@ components/
   CanvasPanel.tsx       # sandboxed iframe, p5 injection, error/FPS capture
   EditorPanel.tsx       # Monaco editor + Run / Regenerate / Feedback toolbar
   SliderControls.tsx    # auto-generated sliders for adjustable params
-  ConceptCards.tsx      # concept package selection cards
+  ConceptCards.tsx      # concept package selection cards + "Surprise me"
+  WelcomeModal.tsx      # first-visit welcome overlay with prize incentive
   TestModePanel.tsx     # fixture bar for testing without a live model
 
 lib/
@@ -180,7 +181,7 @@ Creative Director responds (question / observation / directive)
 [User can click GENERATE at any time]
     |
     v
-3 Concept Packages presented
+3 Concept Packages presented (or "Surprise me" to let the system pick)
     |
     v
 User picks one -> Code generated -> Sketch runs
@@ -188,6 +189,16 @@ User picks one -> Code generated -> Sketch runs
     v
 Critique / Adjust / Regenerate cycle
 ```
+
+---
+
+## Emerging trust UX
+
+The app is designed as a **single-use experience** — users never come back, so trust is always emerging. The UX reflects this:
+
+- **Welcome modal with prize incentive** — Sets a goal frame ("Create something amazing and win a prize") before the user types anything. Explains the 3-step flow so the user knows what to expect.
+- **"Surprise me" concept selection** — A dashed-border card below the 3 concepts reads "I trust you — pick for me." Users who click it are signaling trust in the system. Users who carefully compare all 3 cards aren't there yet. Both paths are valid.
+- **p5.js preloading** — The p5.js library is preloaded via `<link rel="preload">` on page load so the sketch renders instantly after code generation. In a 1x experience, infrastructure delays erode trust — the "magic moment" must be immediate.
 
 ---
 

@@ -7,6 +7,7 @@ import ConceptCards from '@/components/ConceptCards'
 import EditorPanel from '@/components/EditorPanel'
 import SliderControls from '@/components/SliderControls'
 import TestModePanel from '@/components/TestModePanel'
+import WelcomeModal from '@/components/WelcomeModal'
 import { FIXTURE_GROUPS } from '@/lib/testFixtures'
 import type { TestFixture } from '@/lib/testFixtures'
 import type {
@@ -115,13 +116,13 @@ function reducer(state: AppState, action: Action): AppState {
 // ─── Mode badge ──────────────────────────────────────────────────────────────
 
 const modeColors: Record<AppMode, string> = {
-  elicitation: 'bg-blue-700',
-  concept_extraction: 'bg-purple-700',
-  concept_selection: 'bg-yellow-700',
-  code_generation: 'bg-orange-700',
-  running: 'bg-emerald-700',
-  debug: 'bg-red-700',
-  critique: 'bg-amber-700',
+  elicitation: 'bg-blue-100 text-blue-700',
+  concept_extraction: 'bg-purple-100 text-purple-700',
+  concept_selection: 'bg-amber-100 text-amber-700',
+  code_generation: 'bg-orange-100 text-orange-700',
+  running: 'bg-emerald-100 text-emerald-700',
+  debug: 'bg-red-100 text-red-700',
+  critique: 'bg-amber-100 text-amber-700',
 }
 
 const modeLabels: Record<AppMode, string> = {
@@ -160,6 +161,9 @@ export default function Home() {
   const autoDebugFiredRef = useRef(false)
   const runtimeMetadataRef = useRef<RuntimeMetadata | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+
+  // ── Welcome modal ────────────────────────────────────────────────────────
+  const [showWelcome, setShowWelcome] = useState(true)
 
   // ── Test mode ─────────────────────────────────────────────────────────────
   const [testMode, setTestMode] = useState(false)
@@ -408,6 +412,13 @@ export default function Home() {
     [callApiOrMock, startRequest, state.history, state.isLoading],
   )
 
+  // ── Surprise me: pick a random concept ─────────────────────────────────
+  const handleSurpriseMe = useCallback(() => {
+    if (!state.conceptPackages || state.conceptPackages.length === 0 || state.isLoading) return
+    const randomPkg = state.conceptPackages[Math.floor(Math.random() * state.conceptPackages.length)]
+    handleSelectPackage(randomPkg)
+  }, [state.conceptPackages, state.isLoading, handleSelectPackage])
+
   // ── Canvas error → auto debug (fires once per code version) ─────────────
   const handleCanvasError = useCallback(
     async (errorMsg: string) => {
@@ -606,15 +617,18 @@ export default function Home() {
       : null
 
   return (
-    <div className="flex flex-col h-screen bg-gray-950 text-gray-100">
+    <div className="flex flex-col h-screen bg-[#fafafa] text-gray-800">
+      {/* Welcome modal */}
+      {showWelcome && <WelcomeModal onDismiss={() => setShowWelcome(false)} />}
+
       {/* Header */}
-      <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800 bg-gray-900 shrink-0">
-        <h1 className="text-lg font-bold tracking-tight">p5 Sketch Maker</h1>
-        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${modeColors[state.mode]}`}>
+      <header className="flex items-center gap-3 px-5 py-3 bg-white border-b border-gray-200/80 shadow-sm shrink-0">
+        <h1 className="text-xl font-serif tracking-tight text-gray-900">p5 Sketch Maker</h1>
+        <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${modeColors[state.mode]}`}>
           {modeLabels[state.mode]}
         </span>
         {state.runtimeMetadata && state.mode === 'running' && (
-          <span className="text-xs text-gray-500 font-mono ml-1">
+          <span className="text-xs text-gray-400 font-mono ml-1">
             {state.runtimeMetadata.fps} fps
           </span>
         )}
@@ -622,24 +636,24 @@ export default function Home() {
         {state.isLoading && (
           <button
             onClick={handleStop}
-            className="text-xs text-red-400 hover:text-red-200 transition-colors px-2 py-1 rounded border border-red-700 hover:border-red-400"
+            className="text-xs text-red-500 hover:text-red-700 transition-colors px-2.5 py-1 rounded-lg border border-red-200 hover:border-red-300 hover:bg-red-50"
           >
-            ■ Stop
+            Stop
           </button>
         )}
         <button
           onClick={toggleTestMode}
-          className={`text-xs transition-colors px-2 py-1 rounded border ${
+          className={`text-xs transition-colors px-2.5 py-1 rounded-lg border ${
             testMode
-              ? 'text-amber-300 border-amber-600 bg-amber-950/60 hover:border-amber-400'
-              : 'text-gray-500 border-gray-700 hover:text-gray-300 hover:border-gray-500'
+              ? 'text-amber-600 border-amber-300 bg-amber-50 hover:bg-amber-100'
+              : 'text-gray-400 border-gray-200 hover:text-gray-600 hover:border-gray-300 hover:bg-gray-50'
           }`}
         >
-          {testMode ? '⚗ Test Mode ON' : '⚗ Test Mode'}
+          {testMode ? 'Test Mode ON' : 'Test Mode'}
         </button>
         <button
           onClick={() => dispatch({ type: 'RESET' })}
-          className="text-xs text-gray-500 hover:text-gray-300 transition-colors px-2 py-1 rounded border border-gray-700 hover:border-gray-500"
+          className="text-xs text-gray-400 hover:text-gray-600 transition-colors px-2.5 py-1 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50"
         >
           Start Over
         </button>
@@ -658,7 +672,7 @@ export default function Home() {
       {/* Main layout */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Left: Chat (38%) */}
-        <div className="w-[38%] flex flex-col border-r border-gray-800 min-h-0">
+        <div className="w-[38%] flex flex-col border-r border-gray-200/80 min-h-0 bg-white">
           <ChatPanel
             messages={renderedMessages}
             mode={state.mode}
@@ -672,21 +686,22 @@ export default function Home() {
                 packages={state.conceptPackages}
                 selected={state.selectedPackage}
                 onSelect={handleSelectPackage}
+                onSurpriseMe={handleSurpriseMe}
               />
             )}
             {/* Critique suggestion cards */}
             {latestSuggestions && state.mode === 'critique' && (
-              <div className="px-3 py-2 border-t border-gray-800 space-y-2">
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Suggestions</p>
+              <div className="px-3 py-2 border-t border-gray-100 space-y-2">
+                <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">Suggestions</p>
                 {latestSuggestions.map((s) => (
                   <button
                     key={s.id}
                     onClick={() => handleSuggestion(s)}
                     disabled={state.isLoading}
-                    className="w-full text-left bg-gray-900 hover:bg-gray-800 border border-gray-700 hover:border-amber-600 rounded-xl p-3 transition-all disabled:opacity-50"
+                    className="w-full text-left bg-amber-50/60 hover:bg-amber-50 border border-amber-200/80 hover:border-amber-300 rounded-xl p-3 transition-all disabled:opacity-50 shadow-sm"
                   >
-                    <p className="text-sm font-semibold text-amber-400">{s.title}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{s.description}</p>
+                    <p className="text-sm font-semibold text-amber-700">{s.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{s.description}</p>
                   </button>
                 ))}
               </div>
@@ -697,7 +712,7 @@ export default function Home() {
         {/* Right: Editor + Canvas (62%) */}
         <div className="flex-1 flex flex-col min-h-0">
           {/* Editor (45%) */}
-          <div className="h-[45%] border-b border-gray-800">
+          <div className="h-[45%] border-b border-gray-200/80">
             <EditorPanel
               code={state.currentCode}
               mode={state.mode}
@@ -713,7 +728,7 @@ export default function Home() {
           <div className="flex-1 flex flex-col min-h-0">
             {/* relative+absolute-fill gives CanvasPanel a definite pixel height */}
             <div className="flex-1 min-h-0 relative">
-              <div className="absolute inset-0 p-2 flex flex-col">
+              <div className="absolute inset-0 p-3 flex flex-col">
                 <CanvasPanel
                   code={state.currentCode}
                   onError={handleCanvasError}
