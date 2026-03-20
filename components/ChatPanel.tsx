@@ -15,7 +15,7 @@ interface ChatPanelProps {
 const modePlaceholders: Partial<Record<AppMode, string>> = {
   elicitation: 'Share something you experienced…',
   concept_selection: 'Pick a concept card above…',
-  running: 'Your sketch is running!',
+  running: 'Optional: describe a change — or use ★ Feedback for structured rounds of refinement…',
   debug: 'Fixing errors…',
   critique: 'Type to continue…',
 }

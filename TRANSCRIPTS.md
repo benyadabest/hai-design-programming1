@@ -37,7 +37,7 @@ User types message
       │
       └── user clicks suggestion card
               ▼
-        [code_generation]  (cycle repeats)
+        [code_generation]  ──► [running]  ──► (repeat ★ Feedback and/or further suggestions for multiple refinement rounds)
 ```
 
 **State stored in `AppState`:**

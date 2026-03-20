@@ -77,6 +77,15 @@ export default function WelcomeModal({ onDismiss }: WelcomeModalProps) {
               </div>
               <p className="text-sm text-gray-600">Watch your story come alive as generative art</p>
             </div>
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-full bg-indigo-50 flex items-center justify-center shrink-0">
+                <span className="text-xs font-semibold text-indigo-500">4</span>
+              </div>
+              <p className="text-sm text-gray-600">
+                Refine in multiple rounds with <span className="font-medium text-gray-700">Feedback</span> — apply
+                suggestions step by step and open Feedback again on each new version
+              </p>
+            </div>
           </div>
         </div>
 

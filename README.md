@@ -12,7 +12,7 @@ Built for HAI Design × Programming 1.
 2. **Concept extraction** — when you're ready (click **Generate** anytime, or let the system auto-trigger), three distinct visual concept packages are generated
 3. **Sketch generation** — you pick a concept; a complete p5.js sketch is written and runs live in the browser
 4. **Auto-debug** — if the sketch has a runtime error it's detected automatically and patched (fires once per code version)
-5. **Critique & iteration** — request structured feedback with an overall score and clickable improvement suggestions
+5. **Critique & iteration** — request structured feedback with an overall score and clickable improvement suggestions; participants are encouraged to repeat **★ Feedback → apply a suggestion → run again** several times so the session reflects collaborative, incremental refinement rather than a single pass after the first generation
 6. **Live sliders** — adjustable parameters exposed as sliders that hot-patch the running sketch
 
 ---

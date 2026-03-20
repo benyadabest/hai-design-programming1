@@ -397,7 +397,12 @@ export default function Home() {
         dispatch({ type: 'SET_CODE', code: payload.code, params: payload.adjustable_params })
         dispatch({
           type: 'ADD_MESSAGE',
-          message: { role: 'assistant', content: `✨ Here's your sketch! ${payload.explanation}` },
+          message: {
+            role: 'assistant',
+            content: `✨ Here's your sketch! ${payload.explanation}
+
+_Plan on several revision rounds: use ★ Feedback for critique and concrete suggestions, apply changes step by step, then open ★ Feedback again on the new version. That back-and-forth is what we're studying—incremental improvement, not a single shot._`,
+          },
         })
         autoDebugFiredRef.current = false
       } catch (err) {
@@ -527,11 +532,19 @@ export default function Home() {
       const score = payload.overall_score.toFixed(1)
       dispatch({
         type: 'ADD_MESSAGE',
-        message: { role: 'assistant', content: `**Critique (${score}/10)**\n\n${payload.feedback}` },
+        message: { role: 'assistant', content: `Critique (${score}/10)\n\n${payload.feedback}` },
       })
       dispatch({
         type: 'ADD_MESSAGE',
         message: { role: 'assistant', content: `__SUGGESTIONS__${JSON.stringify(payload.suggestions)}` },
+      })
+      dispatch({
+        type: 'ADD_MESSAGE',
+        message: {
+          role: 'assistant',
+          content:
+            '_You can apply one suggestion below, then run ★ Feedback again on the updated sketch. Aim for at least a few cycles—small steps are better than one giant change._',
+        },
       })
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return
@@ -567,7 +580,12 @@ export default function Home() {
         dispatch({ type: 'SET_CODE', code: payload.code, params: payload.adjustable_params })
         dispatch({
           type: 'ADD_MESSAGE',
-          message: { role: 'assistant', content: `Applied: ${suggestion.title}. ${payload.explanation}` },
+          message: {
+            role: 'assistant',
+            content: `Applied: ${suggestion.title}. ${payload.explanation}
+
+_You can apply another suggestion from this list, edit the code directly, or run ★ Feedback for a new critique of this version._`,
+          },
         })
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return
@@ -690,9 +708,14 @@ export default function Home() {
               />
             )}
             {/* Critique suggestion cards */}
-            {latestSuggestions && state.mode === 'critique' && (
+            {latestSuggestions && (state.mode === 'critique' || state.mode === 'running') && (
               <div className="px-3 py-2 border-t border-gray-100 space-y-2">
                 <p className="text-xs text-gray-400 uppercase tracking-wider font-medium">Suggestions</p>
+                <p className="text-xs text-gray-500 leading-snug">
+                  {state.mode === 'critique'
+                    ? 'Pick one to apply, then keep refining with ★ Feedback on the result.'
+                    : 'From your last critique — apply another idea, or use ★ Feedback so suggestions match the latest sketch.'}
+                </p>
                 {latestSuggestions.map((s) => (
                   <button
                     key={s.id}

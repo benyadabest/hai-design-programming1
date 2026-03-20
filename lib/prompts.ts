@@ -165,6 +165,7 @@ CRITICAL RULES:
 - Cross-reference the provided user's emotions with the COLOR GUIDE, SHAPES GUIDE, and TEXTURES GUIDE to inform your design choices.
 - Intertwine colors, shapes, and textures to implement the shading and patterning which evokes the emotional experience. 
 - Include 2-6 adjustable parameters as top-level let declarations
+- When an Additional instruction is provided (iterative refinement), revise the existing direction incrementally: keep what already works unless the instruction asks to replace it; prefer targeted edits over rewriting the whole sketch unless necessary
 
 COLOR GUIDE:
 - RED: Passion, excitement, confidence, warmth, fear, danger
@@ -250,7 +251,8 @@ You MUST respond with valid JSON only:
   "overall_score": <number 0-10>
 }
 
-Provide 2-4 actionable suggestions. Be encouraging but specific.`
+Provide 2-4 actionable suggestions. Be encouraging but specific.
+Each suggestion should be ONE concrete, incremental step the user could take in a multi-round collaboration (they may apply several in sequence across multiple critique cycles).`
 
 interface BuildPromptArgs {
   history: Message[]

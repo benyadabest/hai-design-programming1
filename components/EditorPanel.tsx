@@ -53,6 +53,11 @@ export default function EditorPanel({
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
         <span className="text-xs text-gray-500 font-mono flex-1">sketch.js</span>
+        {hasCode && mode === 'running' && (
+          <span className="text-[10px] text-gray-600 max-w-[40%] truncate hidden sm:inline" title="Collaborative refinement">
+            Refine in multiple passes via ★ Feedback
+          </span>
+        )}
         {hasCode && (
           <span className="text-[10px] text-gray-400 group-hover:text-gray-500 transition-colors">
             {isOpen ? 'collapse' : 'expand'}
