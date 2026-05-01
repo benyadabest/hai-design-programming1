@@ -2,6 +2,7 @@
 
 import { useReducer, useCallback, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import ChatPanel from '@/components/ChatPanel'
 import ConceptCards from '@/components/ConceptCards'
 import EditorPanel from '@/components/EditorPanel'
@@ -161,6 +162,7 @@ export default function Home() {
   const autoDebugFiredRef = useRef(false)
   const runtimeMetadataRef = useRef<RuntimeMetadata | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const accumulatedEmotionsRef = useRef<string[]>([])
 
   // ── Welcome modal ────────────────────────────────────────────────────────
   const [showWelcome, setShowWelcome] = useState(true)
@@ -296,17 +298,44 @@ export default function Home() {
       // ─────────────────────────────────────────────────────────────────────
 
       try {
-        const data = await callApiOrMock({ mode: 'elicitation', history: state.history, userInput }, signal)
+        const data = await callApiOrMock(
+          {
+            mode: 'elicitation',
+            history: state.history,
+            userInput,
+            sessionId: state.sessionId,
+            priorAccumulatedEmotions: accumulatedEmotionsRef.current,
+          },
+          signal,
+        )
         const payload = data.payload as ElicitationPayload
+
+        if (payload.detected_emotions) {
+          accumulatedEmotionsRef.current = payload.detected_emotions
+        }
+
         let replyContent = payload.reply
+        if (payload.inappropriate_content?.flagged) {
+          replyContent += `\n\n_Flagged: ${payload.inappropriate_content.reason ?? 'inappropriate content'}_`
+        }
         if (payload.detected_emotions && payload.detected_emotions.length > 0) {
           replyContent += `\n\n_Emotions I'm picking up: ${payload.detected_emotions.join(', ')}_`
         }
         if (payload.creative_direction) {
           replyContent += `\n\n_Visual direction: ${payload.creative_direction}_`
         }
+        if (payload.image_type && payload.image_type !== 'unclear') {
+          replyContent += `\n\n_Image style: ${payload.image_type === 'abstract' ? 'abstract symbolism' : 'literal depiction'}_`
+        }
+        if (payload.physical_characteristics && payload.physical_characteristics.length > 0) {
+          replyContent += `\n\n_Physical details noted: ${payload.physical_characteristics.join(', ')}_`
+        }
         dispatch({ type: 'ADD_MESSAGE', message: { role: 'assistant', content: replyContent } })
         dispatch({ type: 'INCREMENT_TURN' })
+
+        if (payload.inappropriate_content?.flagged) {
+          return
+        }
 
         const newTurnCount = state.turnCount + 1
         if (payload.story_completeness >= 0.75 && newTurnCount >= 3) {
@@ -340,7 +369,7 @@ export default function Home() {
         dispatch({ type: 'SET_LOADING', value: false })
       }
     },
-    [callApiOrMock, startRequest, state.history, state.isLoading, state.turnCount],
+    [callApiOrMock, startRequest, state.history, state.isLoading, state.turnCount, state.sessionId],
   )
 
   // ── Generate button: jump to concept extraction immediately ─────────────
@@ -659,6 +688,12 @@ _You can apply another suggestion from this list, edit the code directly, or run
             Stop
           </button>
         )}
+        <Link
+          href="/logs"
+          className="text-xs text-gray-400 hover:text-indigo-600 transition-colors px-2.5 py-1 rounded-lg border border-gray-200 hover:border-indigo-200 hover:bg-indigo-50"
+        >
+          Logs
+        </Link>
         <button
           onClick={toggleTestMode}
           className={`text-xs transition-colors px-2.5 py-1 rounded-lg border ${
@@ -670,7 +705,10 @@ _You can apply another suggestion from this list, edit the code directly, or run
           {testMode ? 'Test Mode ON' : 'Test Mode'}
         </button>
         <button
-          onClick={() => dispatch({ type: 'RESET' })}
+          onClick={() => {
+            accumulatedEmotionsRef.current = []
+            dispatch({ type: 'RESET' })
+          }}
           className="text-xs text-gray-400 hover:text-gray-600 transition-colors px-2.5 py-1 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-50"
         >
           Start Over

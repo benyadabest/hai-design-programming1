@@ -10,7 +10,7 @@ const SYSTEM_ELICITATION = `You are a creative director extracting the emotions 
 
 The output is a series of colors, shapes, textures, shadings, gradients, and patterns that come together through art psychology to symbolize the emotions from the memory.
 
-STRICT RULES: 
+STRICT RULES:
 - Respond with valid JSON only - absolutely no text outside the JSON object
 - NEVER mention technology, code, or technical details
 - NEVER directly ask about the emotions, indirectly ask questions, and infer the results
@@ -21,6 +21,39 @@ STRICT RULES:
 - USE COLOR, SHAPE, and TEXTURE GUIDES to inform the symbolic art direction
 - KEEP track of all emotions mentioned and inferred throughout the conversation and use them to inform the art direction
 - NEVER remove an emotion, simply order them from most relevant to least relevant as the conversation evolves
+
+EARLY EXTRACTION RULES (apply on the FIRST user message and every message after):
+- Be aggressive about extracting structured information from the very first message — do not wait for follow-ups.
+- Always populate every field of the JSON, even when uncertain. If you cannot confidently determine a value, use a defensible default (empty array, "unclear", false) and add the missing item to "missing_elements" so it gets asked about next turn.
+- "new_emotions" must contain ONLY the emotions newly introduced or strengthened by the latest user message. "detected_emotions" remains the cumulative ordered list across the whole conversation.
+
+CONTENT MODERATION (inappropriate / racist prompts):
+- If the user's message contains racist, hateful, dehumanizing, sexually explicit, harassing, or otherwise inappropriate content, you MUST refuse.
+- On refusal, set "inappropriate_content.flagged" to true and put a short, neutral explanation in "inappropriate_content.reason" (e.g. "racist stereotype", "hateful generalization", "sexual content").
+- The "reply" must politely decline, explain you can't build art around that content, and invite the user to share a different memory. Do NOT lecture, do NOT repeat the offensive content.
+- On refusal, set "story_completeness" to 0, leave "new_emotions" empty, set "image_type" to "unclear", "physical_characteristics" and "additional_characteristics" to [], "is_race_specific" to false, and "creative_direction" to null.
+- If the message is fine, set "inappropriate_content" to { "flagged": false, "reason": null }.
+
+IMAGE TYPE DETECTION (abstract vs real-life):
+- "image_type" reflects what the user wants the final art to look like:
+  - "abstract" — symbolic, emotion-driven generative art (the default for this tool).
+  - "real_life" — a literal depiction of the memory itself (people, places, objects rendered representationally).
+  - "unclear" — not enough signal yet.
+- Listen for explicit cues ("I want to actually see…", "make it look like…", "a literal picture of…") for real_life, and ("just the feeling", "abstract", "symbolic", "mood") for abstract.
+- If "image_type" is "unclear" after the first turn, add a question to "missing_elements" so the next turn can ask, e.g. "abstract symbolism vs. literal depiction".
+
+PHYSICAL APPEARANCE EXTRACTION (only when image_type === "real_life" AND people are involved):
+- Capture concrete, neutral physical descriptors actually mentioned: build, height, hair color/length, clothing, age range, posture, expression, accessories.
+- Do NOT invent traits the user did not provide. If a person is involved but no descriptors are given, leave the array empty and add "physical descriptors of the people" to "missing_elements".
+- For abstract or non-people memories, "physical_characteristics" must be [].
+
+RACE-SPECIFIC vs RACE-NEUTRAL:
+- "is_race_specific" is true ONLY when the user explicitly identifies the race or ethnicity of a person in the memory.
+- It is false for race-neutral prompts. Inferring race from names, locations, or stereotypes is forbidden.
+- When image_type === "real_life" with people AND is_race_specific === false, treat it as a race-neutral prompt and populate "physical_characteristics" with the non-racial descriptors above. Do NOT add race; add "racial/ethnic identity (only if user wants to specify)" to missing_elements only if the user seems to want it.
+
+ADDITIONAL CHARACTERISTICS:
+- Free-form list of any other concrete details that would shape the art: setting, time of day, weather, lighting, sounds, smells, named objects, named places, motion, scale, era, the user's role in the memory.
 
 RESPONSE RULES:
 - Keep “reply” to 2-4 sentences
@@ -75,13 +108,19 @@ TEXTURES GUIDE:
 - Rough/Gritty: Tension, grit, resistance
 - Jagged/Broken: Discomfort, unease
 
-Required JSON (use exactly this structure):
+Required JSON (use exactly this structure — every field is required, no extras):
 {
   "reply": "<your response — can be a question, observation, directive, or creative announcement>",
-  "detected_emotions": ["<emotions you're picking up from their story>"],
+  "detected_emotions": ["<full cumulative ordered list of emotions across the whole conversation>"],
+  "new_emotions": ["<emotions newly introduced or strengthened by the latest user message only>"],
   "creative_direction": "<brief note on visual direction you're leaning toward, or null if too early>",
   "story_completeness": <float 0.0-1.0>,
-  "missing_elements": ["<what you still want to know>"]
+  "missing_elements": ["<what you still want to know>"],
+  "image_type": "<'abstract' | 'real_life' | 'unclear'>",
+  "physical_characteristics": ["<neutral descriptors of people in the memory, only when image_type='real_life' and people are involved; otherwise []>"],
+  "is_race_specific": <true only if the user explicitly stated race/ethnicity, otherwise false>,
+  "additional_characteristics": ["<other concrete details: setting, time, lighting, objects, motion, era, etc.>"],
+  "inappropriate_content": { "flagged": <boolean>, "reason": <string | null> }
 }
 
 story_completeness guide:
@@ -261,6 +300,7 @@ interface BuildPromptArgs {
   currentCode?: string | null
   errorLog?: string | null
   runtimeMetadata?: RuntimeMetadata | null
+  priorAccumulatedEmotions?: string[]
 }
 
 export interface BuiltPrompt {
@@ -271,7 +311,7 @@ export interface BuiltPrompt {
 }
 
 export function buildPrompt(mode: AppMode, args: BuildPromptArgs): BuiltPrompt {
-  const { history, userInput, selectedPackage, currentCode, errorLog, runtimeMetadata } = args
+  const { history, userInput, selectedPackage, currentCode, errorLog, runtimeMetadata, priorAccumulatedEmotions } = args
 
   switch (mode) {
     case 'elicitation': {
@@ -280,13 +320,16 @@ export function buildPrompt(mode: AppMode, args: BuildPromptArgs): BuiltPrompt {
         messages.push({ role: m.role, content: m.content })
       }
       if (userInput) {
-        messages.push({ role: 'user', content: userInput })
+        const prior = priorAccumulatedEmotions && priorAccumulatedEmotions.length > 0
+          ? `\n\n[ACCUMULATED EMOTIONS PRIOR TO THIS MESSAGE]: ${priorAccumulatedEmotions.join(', ')}`
+          : '\n\n[ACCUMULATED EMOTIONS PRIOR TO THIS MESSAGE]: (none yet)'
+        messages.push({ role: 'user', content: `${userInput}${prior}` })
       }
       return {
         system: SYSTEM_ELICITATION,
         messages,
         temperature: 0.8,
-        max_tokens: 512,
+        max_tokens: 2000,
       }
     }
 
@@ -301,7 +344,7 @@ export function buildPrompt(mode: AppMode, args: BuildPromptArgs): BuiltPrompt {
           },
         ],
         temperature: 0.9,
-        max_tokens: 1500,
+        max_tokens: 4000,
       }
     }
 
@@ -318,7 +361,7 @@ export function buildPrompt(mode: AppMode, args: BuildPromptArgs): BuiltPrompt {
           },
         ],
         temperature: 0.7,
-        max_tokens: 3000,
+        max_tokens: 16000,
       }
     }
 
@@ -333,7 +376,7 @@ export function buildPrompt(mode: AppMode, args: BuildPromptArgs): BuiltPrompt {
           },
         ],
         temperature: 0.3,
-        max_tokens: 3000,
+        max_tokens: 16000,
       }
     }
 
@@ -349,7 +392,7 @@ export function buildPrompt(mode: AppMode, args: BuildPromptArgs): BuiltPrompt {
           },
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 6000,
       }
     }
 

@@ -90,10 +90,32 @@ export default function ChatPanel({ messages, mode, isLoading, onSend, onGenerat
             <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-indigo-50 to-violet-50 flex items-center justify-center mr-2.5 mt-0.5 shrink-0 border border-indigo-100/40">
               <span className="text-[11px] font-serif text-indigo-300">~</span>
             </div>
-            <div className="flex gap-1 py-2">
-              <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:0ms]" />
-              <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:150ms]" />
-              <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:300ms]" />
+            <div className="flex flex-col gap-1.5">
+              <div className="flex gap-1 py-2">
+                <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:0ms]" />
+                <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:150ms]" />
+                <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:300ms]" />
+              </div>
+              <div className="text-[11px] text-gray-400">
+                while you wait:{' '}
+                <a
+                  href="https://www.youtube.com/watch?v=vTfD20dbxho"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-400 hover:text-indigo-600 underline decoration-dotted underline-offset-2"
+                >
+                  brainrot
+                </a>
+                {' · '}
+                <a
+                  href="https://www.youtube.com/watch?v=Aq5WXmQQooo"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-400 hover:text-indigo-600 underline decoration-dotted underline-offset-2"
+                >
+                  music
+                </a>
+              </div>
             </div>
           </div>
         )}

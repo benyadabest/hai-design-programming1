@@ -1,21 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import Anthropic from '@anthropic-ai/sdk'
 import { buildPrompt } from '@/lib/prompts'
 import { validate } from '@/lib/validator'
-import type { ApiRequest } from '@/lib/types'
+import { logElicitation } from '@/lib/logger'
+import type { ApiRequest, ElicitationLogEntry, ElicitationPayload } from '@/lib/types'
 
-const client = new OpenAI({
-  baseURL: process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434/v1',
-  apiKey: 'ollama', // required by SDK, ignored by Ollama
-})
+// Use APP_-prefixed vars to avoid shell/tooling env (ANTHROPIC_API_KEY,
+// ANTHROPIC_BASE_URL) shadowing .env.local — system env wins in Next.js.
+const apiKey = process.env.APP_ANTHROPIC_API_KEY
+if (!apiKey) {
+  console.error('[chat route] APP_ANTHROPIC_API_KEY is missing — check .env.local')
+}
+const client = new Anthropic({ apiKey })
 
-const MODEL = process.env.OLLAMA_MODEL ?? 'qwen2.5-coder:7b'
+const DEFAULT_MODEL = process.env.APP_ANTHROPIC_MODEL ?? 'claude-opus-4-6'
+const FAST_MODEL = process.env.APP_ANTHROPIC_FAST_MODEL ?? 'claude-sonnet-4-6'
+
+// Code-heavy modes use Sonnet for ~2x faster long outputs; conversational/
+// creative modes stay on Opus for richer reasoning.
+const MODEL_FOR_MODE: Record<string, string> = {
+  code_generation: FAST_MODEL,
+  debug: FAST_MODEL,
+}
+
 const MAX_RETRIES = 2
 
 export async function POST(req: NextRequest) {
   try {
     const body: ApiRequest = await req.json()
-    const { mode, history, userInput, selectedPackage, currentCode, errorLog, runtimeMetadata } = body
+    const {
+      mode,
+      history,
+      userInput,
+      selectedPackage,
+      currentCode,
+      errorLog,
+      runtimeMetadata,
+      sessionId,
+      priorAccumulatedEmotions,
+    } = body
 
     let lastError: string | null = null
     let retryCount = 0
@@ -29,10 +52,10 @@ export async function POST(req: NextRequest) {
           currentCode,
           errorLog,
           runtimeMetadata,
+          priorAccumulatedEmotions,
         })
 
-        // On retries, append error context to the last user message
-        const messages = [...prompt.messages]
+        const messages = prompt.messages.map((m) => ({ role: m.role, content: m.content }))
         if (attempt > 0 && lastError) {
           const lastMsg = messages[messages.length - 1]
           messages[messages.length - 1] = {
@@ -41,20 +64,25 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        const response = await client.chat.completions.create({
-          model: MODEL,
-          messages: [
-            { role: 'system', content: prompt.system },
-            ...messages,
-          ],
-          temperature: prompt.temperature,
+        const response = await client.messages.create({
+          model: MODEL_FOR_MODE[mode] ?? DEFAULT_MODEL,
           max_tokens: prompt.max_tokens,
-          response_format: { type: 'json_object' },
+          temperature: prompt.temperature,
+          system: [
+            {
+              type: 'text',
+              text: prompt.system,
+              cache_control: { type: 'ephemeral' },
+            },
+          ],
+          messages,
         })
 
-        const rawText = response.choices[0]?.message?.content ?? ''
+        let rawText = ''
+        for (const block of response.content) {
+          if (block.type === 'text') rawText += block.text
+        }
 
-        // Strip markdown code fences if present
         const jsonText = rawText
           .replace(/^```(?:json)?\s*/i, '')
           .replace(/\s*```\s*$/, '')
@@ -62,6 +90,23 @@ export async function POST(req: NextRequest) {
 
         const parsed = JSON.parse(jsonText)
         validate(mode, parsed)
+
+        if (mode === 'elicitation' && userInput) {
+          const p = parsed as ElicitationPayload
+          const entry: ElicitationLogEntry = {
+            timestamp: new Date().toISOString(),
+            sessionId: sessionId ?? 'unknown',
+            prompt: userInput,
+            accumulated_emotions_prior: priorAccumulatedEmotions ?? [],
+            emotions_detected_this_prompt: p.new_emotions ?? [],
+            image_type: p.image_type,
+            physical_characteristics: p.physical_characteristics ?? [],
+            is_race_specific: p.is_race_specific,
+            additional_characteristics: p.additional_characteristics ?? [],
+            inappropriate_content: p.inappropriate_content,
+          }
+          logElicitation(entry)
+        }
 
         retryCount = attempt
         return NextResponse.json({ mode, payload: parsed, retryCount })
@@ -77,7 +122,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Should not reach here
     return NextResponse.json({ error: 'Unexpected error' }, { status: 500 })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'

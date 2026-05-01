@@ -1,12 +1,37 @@
 export const elicitationSchema = {
   type: 'object',
-  required: ['reply', 'story_completeness', 'missing_elements', 'detected_emotions'],
+  required: [
+    'reply',
+    'story_completeness',
+    'missing_elements',
+    'detected_emotions',
+    'new_emotions',
+    'image_type',
+    'physical_characteristics',
+    'is_race_specific',
+    'additional_characteristics',
+    'inappropriate_content',
+  ],
   properties: {
     reply: { type: 'string', minLength: 1 },
     detected_emotions: { type: 'array', items: { type: 'string' } },
+    new_emotions: { type: 'array', items: { type: 'string' } },
     creative_direction: { type: ['string', 'null'] },
     story_completeness: { type: 'number', minimum: 0, maximum: 1 },
     missing_elements: { type: 'array', items: { type: 'string' } },
+    image_type: { type: 'string', enum: ['abstract', 'real_life', 'unclear'] },
+    physical_characteristics: { type: 'array', items: { type: 'string' } },
+    is_race_specific: { type: 'boolean' },
+    additional_characteristics: { type: 'array', items: { type: 'string' } },
+    inappropriate_content: {
+      type: 'object',
+      required: ['flagged', 'reason'],
+      properties: {
+        flagged: { type: 'boolean' },
+        reason: { type: ['string', 'null'] },
+      },
+      additionalProperties: false,
+    },
   },
   additionalProperties: false,
 }

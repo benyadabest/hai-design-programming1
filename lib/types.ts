@@ -53,13 +53,39 @@ export interface AppState {
   turnCount: number
 }
 
+export type ImageType = 'abstract' | 'real_life' | 'unclear'
+
+export interface InappropriateContent {
+  flagged: boolean
+  reason: string | null
+}
+
 // API response payloads per mode
 export interface ElicitationPayload {
   reply: string
   detected_emotions: string[]
+  new_emotions: string[]
   creative_direction: string | null
   story_completeness: number
   missing_elements: string[]
+  image_type: ImageType
+  physical_characteristics: string[]
+  is_race_specific: boolean
+  additional_characteristics: string[]
+  inappropriate_content: InappropriateContent
+}
+
+export interface ElicitationLogEntry {
+  timestamp: string
+  sessionId: string
+  prompt: string
+  accumulated_emotions_prior: string[]
+  emotions_detected_this_prompt: string[]
+  image_type: ImageType
+  physical_characteristics: string[]
+  is_race_specific: boolean
+  additional_characteristics: string[]
+  inappropriate_content: InappropriateContent
 }
 
 export interface ConceptExtractionPayload {
@@ -112,4 +138,6 @@ export interface ApiRequest {
   currentCode?: string | null
   errorLog?: string | null
   runtimeMetadata?: RuntimeMetadata | null
+  sessionId?: string
+  priorAccumulatedEmotions?: string[]
 }
