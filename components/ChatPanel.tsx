@@ -108,6 +108,15 @@ export default function ChatPanel({ messages, mode, isLoading, onSend, onGenerat
                 </a>
                 {' · '}
                 <a
+                  href="https://www.youtube.com/watch?v=u7kdVe8q5zs"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-400 hover:text-indigo-600 underline decoration-dotted underline-offset-2"
+                >
+                  brainrot #2
+                </a>
+                {' · '}
+                <a
                   href="https://www.youtube.com/watch?v=Aq5WXmQQooo"
                   target="_blank"
                   rel="noopener noreferrer"
